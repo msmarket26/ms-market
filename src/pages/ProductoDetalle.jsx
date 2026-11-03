@@ -14,15 +14,14 @@ export default function ProductoDetalle({ producto, onCerrar, onAgregarAlCarrito
   const esMiPropioProducto = usuario && producto.vendedorId === usuario.uid;
   const stockDisponible = Number(producto.stock) || 0;
 
-  // Enlace directo a WhatsApp del vendedor
+  // Enlace a WhatsApp solo si el vendedor lo configuró
   const numeroWa = producto.whatsapp ? producto.whatsapp.replace(/\D/g, "") : null;
   const linkWhatsApp = numeroWa
     ? `https://wa.me/${numeroWa}?text=${encodeURIComponent(
-        `¡Hola ${producto.vendedorNombre}! Tengo una consulta sobre el producto "${producto.nombre}" en M&S Market.`
+        `¡Hola ${producto.vendedorNombre}! Te escribo desde M&S Market para consultar sobre "${producto.nombre}".`
       )}`
     : null;
 
-  // Pago directo e individual desde la ficha de detalle (flujo clásico por si no usan el carrito)
   async function subirComprobante(e) {
     const archivo = e.target.files?.[0];
     if (!archivo || !usuario) return;
@@ -48,7 +47,7 @@ export default function ProductoDetalle({ producto, onCerrar, onAgregarAlCarrito
 
       setYaEnviado(true);
     } catch (err) {
-      setError(err.message || "No se pudo subir el comprobante. Intenta nuevamente.");
+      setError(err.message || "No se pudo subir el comprobante.");
     } finally {
       setSubiendo(false);
     }
@@ -56,77 +55,58 @@ export default function ProductoDetalle({ producto, onCerrar, onAgregarAlCarrito
 
   return (
     <div className="overlay" onClick={onCerrar}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close" onClick={onCerrar} aria-label="Cerrar modal">
-          ✕
-        </button>
-
-        <h2 style={{ fontSize: "22px", marginBottom: "4px" }}>{producto.nombre}</h2>
-        <span style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "1px" }}>
-          Categoría: <b>{producto.categoria}</b>
-        </span>
+      <div className="modal modal-detalle-responsive" onClick={(e) => e.stopPropagation()}>
+        {/* Cabecera con botón de cerrar accesible */}
+        <div className="modal-header-nav">
+          <div>
+            <span className="card-badge-categoria" style={{ position: "static" }}>
+              {producto.categoria}
+            </span>
+          </div>
+          <button className="modal-close-btn" onClick={onCerrar} aria-label="Cerrar modal">
+            ✕
+          </button>
+        </div>
 
         <div className="modal-grid">
-          {/* Columna Izquierda: Imagen y Ficha */}
-          <div>
+          {/* Columna 1: Fotografía y Datos */}
+          <div className="modal-col-media">
             <div className="modal-foto">
               {producto.imagenUrl ? (
                 <img src={producto.imagenUrl} alt={producto.nombre} />
               ) : (
-                <span style={{ fontSize: "56px" }}>🛍️</span>
+                <span style={{ fontSize: "48px" }}>🛍️</span>
               )}
             </div>
 
+            <h2 className="modal-prod-titulo">{producto.nombre}</h2>
+
             <div className="detalle-lista">
-              <b>Descripción del producto</b>
-              <p style={{ margin: "4px 0", color: "var(--text-main)" }}>
-                {producto.detalle || "Sin descripción adicional."}
-              </p>
+              <b>Descripción</b>
+              <p>{producto.detalle || "Sin descripción proporcionada."}</p>
 
               <b>Vendedora</b>
-              <p style={{ margin: "4px 0" }}>{producto.vendedorNombre}</p>
+              <p>{producto.vendedorNombre}</p>
 
               <b>Punto de entrega o método de envío</b>
-              <p style={{ margin: "4px 0" }}>{producto.envio || "A coordinar con la vendedora"}</p>
+              <p>{producto.envio || "A coordinar con la vendedora"}</p>
             </div>
-
-            {/* Botón de WhatsApp directo */}
-            {linkWhatsApp && (
-              <a
-                href={linkWhatsApp}
-                target="_blank"
-                rel="noreferrer"
-                className="btn-wa"
-                style={{ width: "100%", marginTop: "16px", textDecoration: "none" }}
-              >
-                💬 Contactar a {producto.vendedorNombre} por WhatsApp
-              </a>
-            )}
           </div>
 
-          {/* Columna Derecha: Opciones de Compra y Pago QR */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            {/* Caja de Acción para Carrito */}
-            <div
-              style={{
-                background: "var(--bg-main)",
-                border: "1px solid var(--line)",
-                borderRadius: "var(--radius-md)",
-                padding: "18px",
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "12px" }}>
-                <span style={{ fontSize: "22px", fontWeight: "800", fontFamily: "JetBrains Mono" }}>
-                  Bs {producto.precio}
-                </span>
-                <span style={{ fontSize: "12px", fontWeight: "600", color: stockDisponible > 0 ? "var(--teal)" : "var(--danger)" }}>
+          {/* Columna 2: Compra, WhatsApp y QR */}
+          <div className="modal-col-actions">
+            {/* Caja de Compra y Carrito */}
+            <div className="box-compra">
+              <div className="box-compra-header">
+                <span className="modal-prod-precio">Bs {producto.precio}</span>
+                <span className={stockDisponible > 0 ? "card-stock" : "card-stock card-stock--agotado"}>
                   {stockDisponible > 0 ? `${stockDisponible} disponibles` : "Agotado"}
                 </span>
               </div>
 
               {stockDisponible > 0 && (
-                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "14px" }}>
-                  <label style={{ fontSize: "13px", fontWeight: "600" }}>Cantidad:</label>
+                <div className="box-qty-row">
+                  <span>Cantidad:</span>
                   <div className="item-qty">
                     <button
                       className="btn-qty"
@@ -135,9 +115,7 @@ export default function ProductoDetalle({ producto, onCerrar, onAgregarAlCarrito
                     >
                       −
                     </button>
-                    <span style={{ minWidth: "24px", textAlign: "center", fontWeight: "700" }}>
-                      {cantidad}
-                    </span>
+                    <span className="qty-number">{cantidad}</span>
                     <button
                       className="btn-qty"
                       type="button"
@@ -151,32 +129,44 @@ export default function ProductoDetalle({ producto, onCerrar, onAgregarAlCarrito
 
               <button
                 type="button"
-                className="btn btn-primario"
-                style={{ width: "100%" }}
+                className="btn btn-primario btn-block"
                 disabled={stockDisponible <= 0}
-                onClick={() => {
-                  if (onAgregarAlCarrito) {
-                    onAgregarAlCarrito(producto, cantidad);
-                  }
-                }}
+                onClick={() => onAgregarAlCarrito && onAgregarAlCarrito(producto, cantidad)}
               >
-                🛒 Añadir al Carrito de Compras
+                🛒 Añadir al Carrito
               </button>
+
+              {/* Botón WhatsApp */}
+              {linkWhatsApp ? (
+                <a
+                  href={linkWhatsApp}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn-wa btn-block"
+                  style={{ marginTop: "8px" }}
+                >
+                  💬 Contactar por WhatsApp
+                </a>
+              ) : (
+                <div className="aviso-sin-wa">
+                  <span>ℹ️ Esta vendedora aún no registró WhatsApp directo.</span>
+                </div>
+              )}
             </div>
 
-            {/* Ticket de Pago QR Individual */}
+            {/* Módulo de Pago Directo por QR */}
             {esMiPropioProducto ? (
-              <div className="ticket" style={{ margin: 0, textAlign: "center" }}>
-                <p style={{ fontSize: "13px", color: "var(--text-muted)", margin: 0 }}>
-                  Eres la dueña de este producto. Los compradores podrán ver aquí tu código QR para transferirte.
+              <div className="ticket" style={{ textAlign: "center" }}>
+                <p style={{ fontSize: "12.5px", color: "var(--text-muted)", margin: 0 }}>
+                  Eres la propietaria de este producto. Las compradoras verán tu QR para transferirte.
                 </p>
               </div>
             ) : (
-              <div className="ticket" style={{ margin: 0 }}>
+              <div className="ticket">
                 <div className="ticket-top">
-                  <h3 style={{ fontSize: "15px" }}>Pago inmediato a {producto.vendedorNombre}</h3>
+                  <h3 style={{ fontSize: "14px" }}>Pago directo a {producto.vendedorNombre}</h3>
                   <div className="mono" style={{ fontSize: "11px", color: "var(--text-muted)" }}>
-                    Escanea con tu aplicación bancaria
+                    Escanea con tu aplicación de banco
                   </div>
                 </div>
 
@@ -184,8 +174,8 @@ export default function ProductoDetalle({ producto, onCerrar, onAgregarAlCarrito
                   {producto.qrUrl ? (
                     <img src={producto.qrUrl} alt={`QR de ${producto.vendedorNombre}`} />
                   ) : (
-                    <p style={{ fontSize: "12px", color: "var(--text-muted)", textAlign: "center" }}>
-                      QR no disponible
+                    <p style={{ fontSize: "11px", color: "var(--text-muted)", textAlign: "center", padding: "10px" }}>
+                      Sin QR asignado
                     </p>
                   )}
                 </div>
@@ -193,17 +183,17 @@ export default function ProductoDetalle({ producto, onCerrar, onAgregarAlCarrito
                 <div className="ticket-divider" />
 
                 <div className="ticket-row">
-                  <span>Total directo (1 unidad):</span>
+                  <span>Monto unitario:</span>
                   <b className="mono">Bs {producto.precio}</b>
                 </div>
 
                 {!usuario ? (
-                  <p className="auth-error" style={{ textAlign: "center" }}>
+                  <p className="auth-error" style={{ textAlign: "center", fontSize: "12px" }}>
                     Inicia sesión para subir tu comprobante de pago directo.
                   </p>
                 ) : yaEnviado ? (
-                  <div style={{ textAlign: "center", marginTop: "10px" }}>
-                    <span className="badge badge--wait">Comprobante enviado (Esperando confirmación)</span>
+                  <div style={{ textAlign: "center", marginTop: "8px" }}>
+                    <span className="badge badge--wait">Comprobante enviado</span>
                   </div>
                 ) : (
                   <>
@@ -217,12 +207,12 @@ export default function ProductoDetalle({ producto, onCerrar, onAgregarAlCarrito
                     />
                     <button
                       type="button"
-                      className="btn btn-secundario"
-                      style={{ width: "100%", marginTop: "8px" }}
+                      className="btn btn-secundario btn-block"
+                      style={{ marginTop: "6px" }}
                       disabled={subiendo || !producto.qrUrl}
                       onClick={() => document.getElementById("input-comprobante-directo").click()}
                     >
-                      {subiendo ? "Subiendo captura..." : "📷 Subir comprobante directo"}
+                      {subiendo ? "Subiendo..." : "📷 Subir comprobante directo"}
                     </button>
                   </>
                 )}
